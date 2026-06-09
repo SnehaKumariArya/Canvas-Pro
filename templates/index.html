@@ -1,0 +1,1089 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" href="data:,">
+    <title>Studio Canvas Pro Workspace</title>
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+</head>
+<body class="bg-zinc-100 text-zinc-900 min-h-screen h-screen w-screen overflow-hidden flex flex-col select-none antialiased">
+
+    <header class="w-full bg-zinc-900 border-b border-zinc-800 px-4 py-2 flex items-center gap-2 z-20 shrink-0">
+        <div class="text-xs font-black uppercase tracking-widest text-blue-500 mr-4 select-none">CAD Studio Tabs</div>
+        <div id="tabsContainer" class="flex items-center gap-1.5 overflow-x-auto max-w-[70vw]"></div>
+        <button onclick="createNewPage()" title="Add New Schema Sheet" class="px-2 py-1 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 hover:text-white rounded-lg text-xs font-bold transition-all cursor-pointer">＋ New Sheet</button>
+    </header>
+
+    <div class="flex-1 w-full flex overflow-hidden relative min-h-0">
+        
+        <aside id="layers-panel" class="w-64 h-full bg-white border-r border-zinc-200 z-10 flex flex-col shadow-sm shrink-0">
+            <div class="px-4 py-4 border-b border-zinc-200 flex justify-between items-center shrink-0">
+                <h2 class="text-xs font-bold uppercase tracking-wider text-zinc-400">Layers panel</h2>
+                <span id="layerCount" class="text-[10px] bg-zinc-100 text-zinc-600 px-2 py-0.5 rounded-full font-mono font-bold">0</span>
+            </div>
+            <div id="layersList" class="flex-1 overflow-y-auto p-2 space-y-1 text-xs text-zinc-600"></div>
+        </aside>
+
+        <div class="flex-1 h-full relative overflow-hidden bg-zinc-50">
+            <main class="w-full h-full relative">
+                <canvas id="paintCanvas" class="w-full h-full block cursor-crosshair"></canvas>
+            </main>
+
+            <div id="top-panel" class="absolute top-4 right-56 z-10 flex items-center gap-2 bg-white/90 backdrop-blur-md border border-zinc-200 p-1.5 rounded-xl shadow-xl">
+                <button onclick="undo()" id="btn-undo" title="Undo" class="p-2 hover:bg-zinc-100 text-zinc-600 hover:text-zinc-900 rounded-lg transition-all cursor-pointer">↩️</button>
+                <button onclick="clearCanvas()" title="Clear Entire Canvas" class="p-2 hover:bg-zinc-100 text-zinc-600 hover:text-zinc-900 rounded-lg transition-all cursor-pointer">🗑️</button>
+                <div class="w-[1px] h-5 bg-zinc-200 mx-1"></div>
+                <button onclick="downloadCanvas()" title="Export PNG" class="p-2 hover:bg-zinc-100 text-zinc-600 hover:text-zinc-900 rounded-lg transition-all cursor-pointer">📥</button>
+                <button onclick="saveCanvas()" class="px-3 py-1.5 bg-blue-600 hover:bg-blue-500 text-white font-medium text-xs rounded-lg transition-all cursor-pointer shadow-md shadow-blue-500/10">Save Project</button>
+            </div>
+
+            <div id="left-panel" class="absolute top-4 left-4 bottom-4 z-10 flex flex-col bg-white/95 backdrop-blur-md border border-zinc-200 p-2 rounded-2xl shadow-2xl gap-1 w-14 items-center overflow-y-auto" style="scrollbar-width: none;">
+                <button onclick="setTool('draw')" id="btn-draw" title="Freehand Brush" class="w-10 h-9 shrink-0 flex items-center justify-center text-sm rounded-xl transition-all cursor-pointer bg-blue-600 text-white shadow-md">✏️</button>
+                <button onclick="setTool('select')" id="btn-select" title="Free-Transform Box Tool" class="w-10 h-9 shrink-0 flex items-center justify-center text-sm rounded-xl transition-all cursor-pointer text-zinc-500 hover:bg-zinc-100 hover:text-zinc-900">⛶</button>
+                <button onclick="setTool('line')" id="btn-line" title="Straight Line" class="w-10 h-9 shrink-0 flex items-center justify-center text-sm rounded-xl transition-all cursor-pointer text-zinc-500 hover:bg-zinc-100 hover:text-zinc-900">⎯</button>
+                <button onclick="setTool('arrow')" id="btn-arrow" title="Vector Arrow" class="w-10 h-9 shrink-0 flex items-center justify-center text-sm rounded-xl transition-all cursor-pointer text-zinc-500 hover:bg-zinc-100 hover:text-zinc-900">🏹</button>
+                <button onclick="setTool('rect')" id="btn-rect" title="Rectangle" class="w-10 h-9 shrink-0 flex items-center justify-center text-sm rounded-xl transition-all cursor-pointer text-zinc-500 hover:bg-zinc-100 hover:text-zinc-900">🟩</button>
+                <button onclick="setTool('circle')" id="btn-circle" title="Circle" class="w-10 h-9 shrink-0 flex items-center justify-center text-sm rounded-xl transition-all cursor-pointer text-zinc-500 hover:bg-zinc-100 hover:text-zinc-900">⭕</button>
+                <button onclick="setTool('triangle')" id="btn-triangle" title="Triangle" class="w-10 h-9 shrink-0 flex items-center justify-center text-sm rounded-xl transition-all cursor-pointer text-zinc-500 hover:bg-zinc-100 hover:text-zinc-900">🔺</button>
+                <button onclick="setTool('star')" id="btn-star" title="Star Stamp" class="w-10 h-9 shrink-0 flex items-center justify-center text-sm rounded-xl transition-all cursor-pointer text-zinc-500 hover:bg-zinc-100 hover:text-zinc-900">⭐</button>
+                
+                <div class="w-full h-[1px] bg-zinc-200 my-0.5 shrink-0"></div>
+                
+                <button onclick="setTool('stamp')" id="btn-stamp" title="Schematic & Logic Stamper" class="w-10 h-9 shrink-0 flex items-center justify-center text-sm rounded-xl transition-all cursor-pointer text-zinc-500 hover:bg-zinc-100 hover:text-zinc-900">🎛️</button>
+                <button onclick="setTool('text')" id="btn-text" title="Text Label" class="w-10 h-9 shrink-0 flex items-center justify-center text-sm rounded-xl transition-all cursor-pointer text-zinc-500 hover:bg-zinc-100 hover:text-zinc-900">🔤</button>
+                <button onclick="setTool('fill')" id="btn-fill" title="Paint Bucket Fill" class="w-10 h-9 shrink-0 flex items-center justify-center text-sm rounded-xl transition-all cursor-pointer text-zinc-500 hover:bg-zinc-100 hover:text-zinc-900">🪣</button>
+                <button onclick="setTool('picker')" id="btn-picker" title="Eyedropper" class="w-10 h-9 shrink-0 flex items-center justify-center text-sm rounded-xl transition-all cursor-pointer text-zinc-500 hover:bg-zinc-100 hover:text-zinc-900">🧪</button>
+                
+                <div class="w-full h-[1px] bg-zinc-200 my-0.5 shrink-0"></div>
+                <button onclick="setTool('hand')" id="btn-hand" title="Hand Tool (Pan Workspace)" class="w-10 h-9 shrink-0 flex items-center justify-center text-sm rounded-xl transition-all cursor-pointer text-zinc-500 hover:bg-zinc-100 hover:text-zinc-900">✋</button>
+                <button onclick="setTool('erase')" id="btn-erase" title="Eraser Tool" class="w-10 h-9 shrink-0 flex items-center justify-center text-sm rounded-xl transition-all cursor-pointer text-zinc-500 hover:bg-zinc-100 hover:text-zinc-900">🧼</button>
+            </div>
+
+            <div id="zoom-panel" class="absolute bottom-4 right-56 z-10 flex items-center gap-1.5 bg-white border border-zinc-200 px-3 py-1.5 rounded-xl shadow-lg text-xs text-zinc-600 font-mono">
+                <button onclick="adjustZoom(-0.1)" class="hover:text-zinc-900 font-bold cursor-pointer px-1">-</button>
+                <span id="zoomDisplay" class="w-12 text-center select-none">100%</span>
+                <button onclick="adjustZoom(0.1)" class="hover:text-zinc-900 font-bold cursor-pointer px-1">+</button>
+            </div>
+
+            <div id="right-panel" class="absolute top-1/2 -translate-y-1/2 right-4 z-10 flex flex-col bg-white/95 backdrop-blur-md border border-zinc-200 p-4 rounded-2xl shadow-2xl gap-3.5 w-48 max-h-[90%]" style="height: auto;">
+                
+                <div class="shrink-0">
+                    <label class="text-[10px] uppercase font-bold text-zinc-400 tracking-wider block mb-1.5">Grid Interface</label>
+                    <select id="gridMode" onchange="redrawAllLayers()" class="w-full text-xs bg-zinc-50 border border-zinc-200 rounded-lg p-2 outline-none text-zinc-700 cursor-pointer">
+                        <option value="orthogonal">📐 Orthogonal Grid</option>
+                        <option value="isometric">🔷 Isometric 3D Grid</option>
+                    </select>
+                    <div class="mt-2 flex items-center justify-between bg-zinc-50 border border-zinc-200 p-2 rounded-lg">
+                        <span class="text-[10px] uppercase font-bold text-zinc-500">Snap to Grid</span>
+                        <input type="checkbox" id="snapToGrid" class="accent-blue-500 cursor-pointer" checked>
+                    </div>
+                </div>
+
+                <div class="w-full h-[1px] bg-zinc-200 shrink-0"></div>
+
+                <div class="flex-1 overflow-y-auto space-y-3.5 pr-0.5" style="scrollbar-width: thin;">
+                    
+                    <div class="shrink-0">
+                        <label class="text-[10px] uppercase font-bold text-zinc-400 tracking-wider block mb-1">Image Stickers</label>
+                        <input type="file" id="imageUploader" accept="image/*" class="hidden">
+                        <button onclick="document.getElementById('imageUploader').click()" class="w-full py-1.5 bg-zinc-100 hover:bg-zinc-200 border border-zinc-300 text-zinc-700 font-bold text-[10px] rounded-lg transition-all cursor-pointer">🖼️ Import Image File</button>
+                    </div>
+
+                    <div>
+                        <label class="text-[10px] uppercase font-bold text-zinc-400 tracking-wider block mb-1">Pixel Canvas Filters</label>
+                        <div class="grid grid-cols-2 gap-1">
+                            <button onclick="applyImageEffect('invert')" class="py-1 bg-zinc-50 border border-zinc-200 rounded-md text-[9px] font-bold hover:bg-zinc-100 cursor-pointer">Invert</button>
+                            <button onclick="applyImageEffect('grayscale')" class="py-1 bg-zinc-50 border border-zinc-200 rounded-md text-[9px] font-bold hover:bg-zinc-100 cursor-pointer">Grayscale</button>
+                            <button onclick="applyImageEffect('sepia')" class="py-1 bg-zinc-50 border border-zinc-200 rounded-md text-[9px] font-bold hover:bg-zinc-100 cursor-pointer">Sepia</button>
+                            <button onclick="applyImageEffect('pixelate')" class="py-1 bg-zinc-50 border border-zinc-200 rounded-md text-[9px] font-bold hover:bg-zinc-100 cursor-pointer">Pixelate</button>
+                        </div>
+                    </div>
+
+                    <div class="w-full h-[1px] bg-zinc-200"></div>
+
+                    <div id="stamper-options" class="hidden space-y-2">
+                        <label class="text-[10px] uppercase font-bold text-zinc-400 tracking-wider block">Engineering Library</label>
+                        <select id="stampType" class="w-full text-xs bg-zinc-50 border border-zinc-200 rounded-lg p-2 outline-none text-zinc-700 cursor-pointer">
+                            <optgroup label="Digital Logic Gates">
+                                <option value="and_gate">🔲 AND Gate</option>
+                                <option value="or_gate">🌙 OR Gate</option>
+                                <option value="not_gate">🔺 NOT Inverter</option>
+                                <option value="nand_gate">🔴 NAND Gate</option>
+                                <option value="nor_gate">❌ NOR Gate</option>
+                                <option value="xor_gate">⚡ XOR Gate</option>
+                            </optgroup>
+                            <optgroup label="Passive & Analog">
+                                <option value="resistor">〰️ Resistor</option>
+                                <option value="capacitor">🔋 Capacitor</option>
+                                <option value="inductor">🌀 Inductor Coil</option>
+                                <option value="diode">▶️ PN Diode</option>
+                                <option value="zener">🛡️ Zener Diode</option>
+                                <option value="opamp">📐 Operational Amplifier</option>
+                            </optgroup>
+                            <optgroup label="Semiconductors & Power">
+                                <option value="npn_bjt">🧬 NPN Transistor</option>
+                                <option value="n_channel_mosfet">⚡ N-Ch MOSFET</option>
+                                <option value="transformer">🔌 AC Transformer</option>
+                                <option value="dc_source">➕ DC Voltage Battery</option>
+                                <option value="ac_source">🌊 AC Sine Source</option>
+                                <option value="ground">⏚ Ground Node (GND)</option>
+                            </optgroup>
+                            <optgroup label="Microcontrollers & Robotics">
+                                <option value="mcu_8pin">🎛️ IC Chip (8-Pin DIP)</option>
+                                <option value="mcu_40pin">💻 Main Processor (40-Pin)</option>
+                                <option value="dc_motor">⚙️ DC Motor Rotor</option>
+                            </optgroup>
+                        </select>
+                        
+                        <div class="mt-1">
+                            <label class="text-[9px] uppercase font-bold text-zinc-400 block mb-0.5">Value / Annotation</label>
+                            <input type="text" id="stampLabel" placeholder="e.g. R1 - 10kΩ" class="w-full text-xs bg-zinc-50 border border-zinc-200 rounded-lg p-2 text-zinc-800 outline-none placeholder-zinc-400">
+                        </div>
+                        <div class="w-full h-[1px] bg-zinc-200 my-2"></div>
+                    </div>
+
+                    <div>
+                        <div class="flex justify-between items-center mb-1">
+                            <label class="text-[10px] uppercase font-bold text-zinc-400 tracking-wider">Thickness</label>
+                            <span id="thicknessVal" class="text-xs font-mono font-medium text-zinc-600">3px</span>
+                        </div>
+                        <input type="range" id="thicknessSlider" min="1" max="50" value="3" class="w-full accent-blue-500 bg-zinc-200 h-1 rounded-lg appearance-none cursor-pointer">
+                    </div>
+
+                    <div>
+                        <div class="w-full h-10 flex items-center justify-center bg-zinc-50 rounded-xl border border-zinc-200">
+                            <div id="brushIndicator" class="bg-blue-500 rounded-full transition-all duration-75 shadow-inner" style="width: 3px; height: 3px;"></div>
+                        </div>
+                    </div>
+
+                    <div class="w-full h-[1px] bg-zinc-200"></div>
+
+                    <div>
+                        <label class="text-[10px] uppercase font-bold text-zinc-400 tracking-wider block mb-1.5">Pencil Profile</label>
+                        <select id="brushProfile" onchange="updateBrushPreview()" class="w-full text-xs bg-zinc-50 border border-zinc-200 rounded-lg p-2 outline-none text-zinc-700 cursor-pointer">
+                            <option value="solid">✏️ Standard Marker</option>
+                            <option value="velocity">✍️ Velocity Script Calligraphy</option>
+                            <option value="pencil">✏️ Technical H-Pencil</option>
+                            <option value="charcoal">✏️ Compressed Charcoal</option>
+                            <option value="calligraphy">✒️ Calligraphy Chisel</option>
+                            <option value="watercolor">🖌️ Watercolor Bleed</option>
+                            <option value="neon">✨ Neon Glow Pen</option>
+                            <option value="highlighter">🖍️ Neon Highlighter</option>
+                            <option value="spray">💨 Aerosol Spray Can</option>
+                            <option value="airbrush">🌬️ Smooth Airbrush</option>
+                            <option value="cloth_pattern">🦚 Cloth Fabric Pattern</option>
+                            <option value="brick_pattern">🧱 Architectural Brick</option>
+                        </select>
+                    </div>
+
+                    <div>
+                        <label class="text-[10px] uppercase font-bold text-zinc-400 tracking-wider block mb-1.5">Line Border Style</label>
+                        <select id="lineType" class="w-full text-xs bg-zinc-50 border border-zinc-200 rounded-lg p-2 outline-none text-zinc-700 cursor-pointer">
+                            <option value="continuous">⎯⎯⎯ Continuous</option>
+                            <option value="dashed">--- Dashed Line</option>
+                            <option value="dotted">・・・ Dotted Line</option>
+                        </select>
+                    </div>
+
+                    <div>
+                        <label class="text-[10px] uppercase font-bold text-zinc-400 tracking-wider block mb-1.5">Text Font Family</label>
+                        <select id="fontFamily" class="w-full text-xs bg-zinc-50 border border-zinc-200 rounded-lg p-2 outline-none text-zinc-700 cursor-pointer">
+                            <option value="sans-serif">Clean Sans</option>
+                            <option value="monospace">💻 Code Mono</option>
+                            <option value="serif">📚 Classic Serif</option>
+                        </select>
+                    </div>
+
+                    <div class="w-full h-[1px] bg-zinc-200"></div>
+
+                    <div>
+                        <label class="text-[10px] uppercase font-bold text-zinc-400 tracking-wider block mb-2">Color Matrix</label>
+                        <div class="grid grid-cols-4 gap-2 mb-2">
+                            <button onclick="updateColor('#3b82f6')" class="w-6 h-6 rounded-lg bg-blue-500 cursor-pointer hover:scale-110 border border-black/5 shadow-sm"></button>
+                            <button onclick="updateColor('#ef4444')" class="w-6 h-6 rounded-lg bg-red-500 cursor-pointer hover:scale-110 border border-black/5 shadow-sm"></button>
+                            <button onclick="updateColor('#10b981')" class="w-6 h-6 rounded-lg bg-emerald-500 cursor-pointer hover:scale-110 border border-black/5 shadow-sm"></button>
+                            <button onclick="updateColor('#eab308')" class="w-6 h-6 rounded-lg bg-yellow-500 cursor-pointer hover:scale-110 border border-black/5 shadow-sm"></button>
+                            <button onclick="updateColor('#a855f7')" class="w-6 h-6 rounded-lg bg-purple-500 cursor-pointer hover:scale-110 border border-black/5 shadow-sm"></button>
+                            <button onclick="updateColor('#f43f5e')" class="w-6 h-6 rounded-lg bg-rose-500 cursor-pointer hover:scale-110 border border-black/5 shadow-sm"></button>
+                            <button onclick="updateColor('#000000')" class="w-6 h-6 rounded-lg bg-black cursor-pointer hover:scale-110 border border-black/5 shadow-sm"></button>
+                            <button onclick="updateColor('#ffffff')" class="w-6 h-6 rounded-lg bg-white cursor-pointer hover:scale-110 border border-zinc-300 shadow-sm"></button>
+                        </div>
+
+                        <div class="flex items-center gap-2 bg-zinc-50 border border-zinc-200 p-1.5 rounded-xl">
+                            <input type="color" id="colorPicker" value="#000000" class="w-6 h-6 rounded-md bg-transparent border-0 cursor-pointer p-0">
+                            <span id="hexValue" class="text-[10px] font-mono text-zinc-500 font-semibold uppercase">#000000</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('paintCanvas');
+        const ctx = canvas.getContext('2d');
+        const colorPicker = document.getElementById('colorPicker');
+        const thicknessSlider = document.getElementById('thicknessSlider');
+        const thicknessVal = document.getElementById('thicknessVal');
+        const brushIndicator = document.getElementById('brushIndicator');
+        const brushProfile = document.getElementById('brushProfile');
+        const lineType = document.getElementById('lineType');
+        const fontFamily = document.getElementById('fontFamily');
+        const hexValue = document.getElementById('hexValue');
+        const layersList = document.getElementById('layersList');
+        const layerCount = document.getElementById('layerCount');
+        const zoomDisplay = document.getElementById('zoomDisplay');
+        const gridMode = document.getElementById('gridMode');
+        const snapToGrid = document.getElementById('snapToGrid');
+        const stampType = document.getElementById('stampType');
+        const stampLabel = document.getElementById('stampLabel');
+        const stamperOptions = document.getElementById('stamper-options');
+        const tabsContainer = document.getElementById('tabsContainer');
+        const imageUploader = document.getElementById('imageUploader');
+
+        let isDrawing = false;
+        let currentTool = 'draw'; 
+        let startX, startY;       
+        let currentRawStartX, currentRawStartY;
+        
+        let projectPages = [
+            { id: 1, name: "Main Schematic Sheet", layers: [] }
+        ];
+        let activePageId = 1;
+        let canvasLayers = []; 
+
+        let zoomScale = 1.0;
+        let panX = 0, panY = 0;
+        let isPanning = false;
+        let currentPathPoints = [];
+        const BASE_GRID_VAL = 45;
+
+        let selectedLayerRef = null;
+        let isTransforming = false;
+        let transformMode = ''; 
+
+        let clothPattern, brickPattern;
+        function precompileCanvasTextures() {
+            const pCanvas = document.createElement('canvas'); const pCtx = pCanvas.getContext('2d');
+            pCanvas.width = 16; pCanvas.height = 16;
+            pCtx.strokeStyle = 'rgba(0,0,0,0.12)'; pCtx.lineWidth = 1;
+            pCtx.beginPath(); pCtx.moveTo(0,0); pCtx.lineTo(16,16); pCtx.moveTo(16,0); pCtx.lineTo(0,16); pCtx.stroke();
+            clothPattern = ctx.createPattern(pCanvas, 'repeat');
+
+            const bCanvas = document.createElement('canvas'); const bCtx = bCanvas.getContext('2d');
+            bCanvas.width = 24; bCanvas.height = 16; bCtx.fillStyle = '#ffffff'; bCtx.fillRect(0,0,24,16);
+            bCtx.strokeStyle = '#cbd5e1'; bCtx.lineWidth = 1; bCtx.strokeRect(0,0,24,16); bCtx.strokeRect(0,8,12,8);
+            brickPattern = ctx.createPattern(bCanvas, 'repeat');
+        }
+
+        const ALL_TOOLS = ['draw', 'select', 'line', 'arrow', 'rect', 'circle', 'triangle', 'star', 'stamp', 'text', 'fill', 'picker', 'hand', 'erase'];
+
+        function setTool(tool) {
+            currentTool = tool;
+            ALL_TOOLS.forEach(t => {
+                const element = document.getElementById(`btn-${t}`);
+                if (element) element.className = "w-10 h-9 shrink-0 flex items-center justify-center text-sm rounded-xl transition-all cursor-pointer text-zinc-500 hover:bg-zinc-100 hover:text-zinc-900";
+            });
+            document.getElementById(`btn-${tool}`).className = "w-10 h-9 shrink-0 flex items-center justify-center text-sm rounded-xl transition-all cursor-pointer bg-blue-600 text-white shadow-md";
+            
+            if(tool === 'stamp') {
+                stamperOptions.classList.remove('hidden');
+            } else {
+                stamperOptions.classList.add('hidden');
+            }
+            if (tool !== 'select') { selectedLayerRef = null; redrawAllLayers(); }
+            updateBrushPreview();
+        }
+
+        function updateColor(hexColor) {
+            colorPicker.value = hexColor;
+            updateBrushPreview();
+        }
+
+        function updateBrushPreview() {
+            const size = thicknessSlider.value;
+            thicknessVal.innerText = size + 'px';
+            brushIndicator.style.width = `${Math.min(size, 30)}px`;
+            brushIndicator.style.height = `${Math.min(size, 30)}px`;
+            hexValue.innerText = colorPicker.value;
+            brushIndicator.style.backgroundColor = currentTool === 'erase' ? '#ffffff' : colorPicker.value;
+        }
+
+        function updateTabsUI() {
+            tabsContainer.innerHTML = '';
+            projectPages.forEach(page => {
+                const tab = document.createElement('div');
+                tab.className = `flex items-center gap-2 px-3 py-1 rounded-lg text-xs font-medium cursor-pointer transition-all border ${
+                    page.id === activePageId ? 'bg-blue-600 border-blue-500 text-white shadow-md' : 'bg-zinc-800 border-zinc-700 text-zinc-400 hover:text-white'
+                }`;
+                tab.innerHTML = `
+                    <span onclick="switchSheet(${page.id})">📄 ${page.name}</span>
+                    ${projectPages.length > 1 ? `<span onclick="deleteSheet(${page.id})" class="hover:text-red-400 font-bold ml-1 text-[10px]">✕</span>` : ''}
+                `;
+                tabsContainer.appendChild(tab);
+            });
+        }
+
+        function createNewPage() {
+            const sheetName = prompt("Enter Sheet Title:", `Schema Sheet ${projectPages.length + 1}`);
+            if (!sheetName || sheetName.trim() === '') return;
+            const newId = Date.now();
+            projectPages.push({ id: newId, name: sheetName.trim(), layers: [] });
+            switchSheet(newId);
+        }
+
+        function switchSheet(id) {
+            const currentActive = projectPages.find(p => p.id === activePageId);
+            if (currentActive) currentActive.layers = canvasLayers;
+            activePageId = id;
+            canvasLayers = projectPages.find(p => p.id === id).layers;
+            selectedLayerRef = null; updateTabsUI(); redrawAllLayers();
+        }
+
+        function deleteSheet(id) {
+            if (projectPages.length <= 1) return;
+            if (confirm("Are you sure you want to permanently delete this layout sheet?")) {
+                projectPages = projectPages.filter(p => p.id !== id);
+                if (activePageId === id) activePageId = projectPages[0].id;
+                canvasLayers = projectPages.find(p => p.id === activePageId).layers;
+                updateTabsUI(); redrawAllLayers();
+            }
+        }
+
+        function adjustZoom(amount) {
+            zoomScale = Math.max(0.5, Math.min(3.0, zoomScale + amount));
+            zoomDisplay.innerText = Math.round(zoomScale * 100) + '%';
+            redrawAllLayers();
+        }
+
+        function drawBackgroundGrid() {
+            ctx.save(); 
+            ctx.shadowBlur = 0; ctx.shadowColor = 'transparent'; ctx.globalAlpha = 1.0; ctx.setLineDash([]);
+            ctx.fillStyle = '#ffffff'; ctx.fillRect(0, 0, canvas.width, canvas.height);
+            ctx.strokeStyle = '#f1f5f9'; ctx.lineWidth = 1;
+
+            const gridSize = BASE_GRID_VAL * zoomScale; 
+
+            if (gridMode.value === 'orthogonal') {
+                const startOffsetX = panX % gridSize;
+                const startOffsetY = panY % gridSize;
+                for (let x = startOffsetX; x < canvas.width; x += gridSize) {
+                    ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, canvas.height); ctx.stroke();
+                }
+                for (let y = startOffsetY; y < canvas.height; y += gridSize) {
+                    ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(canvas.width, y); ctx.stroke();
+                }
+            } else if (gridMode.value === 'isometric') {
+                const angle = Math.PI / 6; const cosA = Math.cos(angle); const sinA = Math.sin(angle);
+                for (let i = -canvas.width; i < canvas.width + canvas.height; i += BASE_GRID_VAL) {
+                    ctx.beginPath(); ctx.moveTo(i * zoomScale + panX, 0); ctx.lineTo((i - canvas.height * (cosA/sinA)) * zoomScale + panX, canvas.height); ctx.stroke();
+                    ctx.beginPath(); ctx.moveTo(i * zoomScale + panX, 0); ctx.lineTo((i + canvas.height * (cosA/sinA)) * zoomScale + panX, canvas.height); ctx.stroke();
+                }
+            }
+            ctx.restore(); 
+        }
+
+        function getSnappedCoordinates(rawX, rawY) {
+            if (!snapToGrid.checked) return { x: rawX, y: rawY };
+            const canvasX = (rawX - panX) / zoomScale;
+            const canvasY = (rawY - panY) / zoomScale;
+            const snappedX = Math.round(canvasX / BASE_GRID_VAL) * BASE_GRID_VAL;
+            const snappedY = Math.round(canvasY / BASE_GRID_VAL) * BASE_GRID_VAL;
+            return { x: snappedX * zoomScale + panX, y: snappedY * zoomScale + panY };
+        }
+
+        function resizeCanvas() {
+            canvas.width = canvas.parentElement.clientWidth;
+            canvas.height = canvas.parentElement.clientHeight;
+            redrawAllLayers();
+            loadCanvasFromServer();
+        }
+
+        imageUploader.onchange = function(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = function(event) {
+                const img = new Image();
+                img.onload = function() {
+                    const layerId = Date.now();
+                    canvasLayers.push({
+                        id: layerId, name: `Imported Sticker Image`, type: 'image',
+                        imgElement: img, rawSource: event.target.result,
+                        x: 150, y: 150, w: img.width * 0.4, h: img.height * 0.4
+                    });
+                    setTool('select');
+                    selectedLayerRef = canvasLayers[canvasLayers.length - 1];
+                    redrawAllLayers();
+                };
+                img.src = event.target.result;
+            };
+            reader.readAsDataURL(file);
+        };
+
+        function applyImageEffect(filterType) {
+            if (canvasLayers.length === 0) return;
+            const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+            const d = imgData.data;
+
+            if (filterType === 'invert') {
+                for (let i = 0; i < d.length; i += 4) { d[i] = 255 - d[i]; d[i+1] = 255 - d[i+1]; d[i+2] = 255 - d[i+2]; }
+            } 
+            else if (filterType === 'grayscale') {
+                for (let i = 0; i < d.length; i += 4) { const avg = (d[i] + d[i+1] + d[i+2]) / 3; d[i] = avg; d[i+1] = avg; d[i+2] = avg; }
+            } 
+            else if (filterType === 'sepia') {
+                for (let i = 0; i < d.length; i += 4) {
+                    const r = d[i], g = d[i+1], b = d[i+2];
+                    d[i] = (r * 0.393) + (g * 0.769) + (b * 0.189);
+                    d[i+1] = (r * 0.349) + (g * 0.686) + (b * 0.168);
+                    d[i+2] = (r * 0.272) + (g * 0.534) + (b * 0.131);
+                }
+            } 
+            else if (filterType === 'pixelate') {
+                const size = 8;
+                for (let y = 0; y < canvas.height; y += size) {
+                    for (let x = 0; x < canvas.width; x += size) {
+                        const p = ((y * canvas.width) + x) * 4;
+                        const r = d[p], g = d[p+1], b = d[p+2], a = d[p+3];
+                        for (let sy = 0; sy < size; sy++) {
+                            for (let sx = 0; sx < size; sx++) {
+                                if (x + sx < canvas.width && y + sy < canvas.height) {
+                                    const index = (((y + sy) * canvas.width) + (x + sx)) * 4;
+                                    d[index] = r; d[index+1] = g; d[index+2] = b; d[index+3] = a;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            ctx.putImageData(imgData, 0, 0);
+            canvasLayers.push({ id: Date.now(), name: `Applied ${filterType} Filter`, type: 'baked_raster', snapData: canvas.toDataURL() });
+            updateLayersPanelUI();
+        }
+
+        function drawElectronicStamp(type, cx, cy, thickness, annotationLabel) {
+            ctx.lineWidth = thickness;
+            const w = 50; const h = 40;
+
+            if (type === 'and_gate') {
+                ctx.beginPath(); ctx.moveTo(cx - w/2, cy - h/2); ctx.lineTo(cx, cy - h/2);
+                ctx.arc(cx, cy, h/2, -Math.PI/2, Math.PI/2, false); ctx.lineTo(cx - w/2, cy + h/2); ctx.closePath(); ctx.stroke();
+                ctx.beginPath(); ctx.moveTo(cx - w/2 - 15, cy - 10); ctx.lineTo(cx - w/2, cy - 10);
+                ctx.moveTo(cx - w/2 - 15, cy + 10); ctx.lineTo(cx - w/2, cy + 10); ctx.moveTo(cx + h/2, cy); ctx.lineTo(cx + h/2 + 15, cy); ctx.stroke();
+            } 
+            else if (type === 'or_gate') {
+                ctx.beginPath(); ctx.moveTo(cx - w/2, cy - h/2); ctx.quadraticCurveTo(cx - w/4, cy, cx - w/2, cy + h/2);
+                ctx.quadraticCurveTo(cx, cy + h/2, cx + w/2, cy); ctx.quadraticCurveTo(cx, cy - h/2, cx - w/2, cy - h/2); ctx.stroke();
+                ctx.beginPath(); ctx.moveTo(cx - w/3 - 10, cy - 10); ctx.lineTo(cx - w/3 + 5, cy - 10);
+                ctx.moveTo(cx - w/3 - 10, cy + 10); ctx.lineTo(cx - w/3 + 5, cy + 10); ctx.moveTo(cx + w/2, cy); ctx.lineTo(cx + w/2 + 15, cy); ctx.stroke();
+            } 
+            else if (type === 'not_gate') {
+                ctx.beginPath(); ctx.moveTo(cx - w/2, cy - h/2); ctx.lineTo(cx + w/4, cy); ctx.lineTo(cx - w/2, cy + h/2); ctx.closePath(); ctx.stroke();
+                ctx.beginPath(); ctx.arc(cx + w/4 + 4, cy, 4, 0, 2 * Math.PI); ctx.stroke();
+                ctx.beginPath(); ctx.moveTo(cx - w/2 - 15, cy); ctx.lineTo(cx - w/2, cy); ctx.moveTo(cx + w/4 + 8, cy); ctx.lineTo(cx + w/4 + 20, cy); ctx.stroke();
+            }
+            else if (type === 'nand_gate') {
+                ctx.beginPath(); ctx.moveTo(cx - w/2, cy - h/2); ctx.lineTo(cx, cy - h/2);
+                ctx.arc(cx, cy, h/2, -Math.PI/2, Math.PI/2, false); ctx.lineTo(cx - w/2, cy + h/2); ctx.closePath(); ctx.stroke();
+                ctx.beginPath(); ctx.arc(cx + h/2 + 4, cy, 4, 0, 2 * Math.PI); ctx.stroke();
+                ctx.beginPath(); ctx.moveTo(cx - w/2 - 15, cy - 10); ctx.lineTo(cx - w/2, cy - 10);
+                ctx.moveTo(cx - w/2 - 15, cy + 10); ctx.lineTo(cx - w/2, cy + 10); ctx.moveTo(cx + h/2 + 8, cy); ctx.lineTo(cx + h/2 + 20, cy); ctx.stroke();
+            }
+            else if (type === 'nor_gate') {
+                ctx.beginPath(); ctx.moveTo(cx - w/2, cy - h/2); ctx.quadraticCurveTo(cx - w/4, cy, cx - w/2, cy + h/2);
+                ctx.quadraticCurveTo(cx, cy + h/2, cx + w/2, cy); ctx.quadraticCurveTo(cx, cy - h/2, cx - w/2, cy - h/2); ctx.stroke();
+                ctx.beginPath(); ctx.arc(cx + w/2 + 4, cy, 4, 0, 2 * Math.PI); ctx.stroke();
+                ctx.beginPath(); ctx.moveTo(cx - w/3 - 10, cy - 10); ctx.lineTo(cx - w/3 + 5, cy - 10);
+                ctx.moveTo(cx - w/3 - 10, cy + 10); ctx.lineTo(cx - w/3 + 5, cy + 10); ctx.moveTo(cx + w/2 + 8, cy); ctx.lineTo(cx + w/2 + 20, cy); ctx.stroke();
+            }
+            else if (type === 'xor_gate') {
+                ctx.beginPath(); ctx.moveTo(cx - w/2 - 5, cy - h/2); ctx.quadraticCurveTo(cx - w/4 - 5, cy, cx - w/2 - 5, cy + h/2); ctx.stroke();
+                ctx.beginPath(); ctx.moveTo(cx - w/2, cy - h/2); ctx.quadraticCurveTo(cx - w/4, cy, cx - w/2, cy + h/2);
+                ctx.quadraticCurveTo(cx, cy + h/2, cx + w/2, cy); ctx.quadraticCurveTo(cx, cy - h/2, cx - w/2, cy - h/2); ctx.stroke();
+                ctx.beginPath(); ctx.moveTo(cx - w/2 - 15, cy - 10); ctx.lineTo(cx - w/3, cy - 10);
+                ctx.moveTo(cx - w/2 - 15, cy + 10); ctx.lineTo(cx - w/3, cy + 10); ctx.moveTo(cx + w/2, cy); ctx.lineTo(cx + w/2 + 15, cy); ctx.stroke();
+            }
+            else if (type === 'resistor') {
+                ctx.beginPath(); ctx.moveTo(cx - w, cy); ctx.lineTo(cx - w + 15, cy);
+                ctx.lineTo(cx - w + 20, cy - 10); ctx.lineTo(cx - w + 30, cy + 10); ctx.lineTo(cx - w + 40, cy - 10);
+                ctx.lineTo(cx - w + 50, cy + 10); ctx.lineTo(cx - w + 60, cy - 10); ctx.lineTo(cx - w + 65, cy);
+                ctx.lineTo(cx + w, cy); ctx.stroke();
+            } 
+            else if (type === 'capacitor') {
+                ctx.beginPath(); ctx.moveTo(cx - w, cy); ctx.lineTo(cx - 8, cy); ctx.moveTo(cx + w, cy); ctx.lineTo(cx + 8, cy);
+                ctx.moveTo(cx - 8, cy - h/2); ctx.lineTo(cx - 8, cy + h/2); ctx.moveTo(cx + 8, cy - h/2); ctx.lineTo(cx + 8, cy + h/2); ctx.stroke();
+            }
+            else if (type === 'inductor') {
+                ctx.beginPath(); ctx.moveTo(cx - w, cy); ctx.lineTo(cx - w + 10, cy);
+                for (let i = 0; i < 4; i++) { ctx.arc(cx - 18 + (i * 12), cy, 7, Math.PI, 0, false); }
+                ctx.lineTo(cx + w, cy); ctx.stroke();
+            }
+            else if (type === 'diode') {
+                ctx.beginPath(); ctx.moveTo(cx - w, cy); ctx.lineTo(cx + w, cy); ctx.stroke();
+                ctx.beginPath(); ctx.moveTo(cx - 15, cy - h/2); ctx.lineTo(cx + 15, cy); ctx.lineTo(cx - 15, cy + h/2); ctx.closePath(); ctx.fill();
+                ctx.beginPath(); ctx.moveTo(cx + 15, cy - h/2); ctx.lineTo(cx + 15, cy + h/2); ctx.stroke();
+            }
+            else if (type === 'zener') {
+                ctx.beginPath(); ctx.moveTo(cx - w, cy); ctx.lineTo(cx + w, cy); ctx.stroke();
+                ctx.beginPath(); ctx.moveTo(cx - 15, cy - h/2); ctx.lineTo(cx + 15, cy); ctx.lineTo(cx - 15, cy + h/2); ctx.closePath(); ctx.stroke();
+                ctx.beginPath(); ctx.moveTo(cx + 10, cy - h/2 - 4); ctx.lineTo(cx + 15, cy - h/2); ctx.lineTo(cx + 15, cy + h/2); ctx.lineTo(cx + 20, cy + h/2 + 4); ctx.stroke();
+            }
+            else if (type === 'opamp') {
+                ctx.beginPath(); ctx.moveTo(cx - w/2, cy - h); ctx.lineTo(cx + w, cy); ctx.lineTo(cx - w/2, cy + h); ctx.closePath(); ctx.stroke();
+                ctx.beginPath(); ctx.moveTo(cx - w, cy - 15); ctx.lineTo(cx - w/2, cy - 15); ctx.moveTo(cx - w, cy + 15); ctx.lineTo(cx - w/2, cy + 15); ctx.moveTo(cx + w, cy); ctx.lineTo(cx + w + 15, cy); ctx.stroke();
+                ctx.font = "bold 12px sans-serif"; ctx.fillText("-", cx - w/2 + 5, cy - 10); ctx.fillText("+", cx - w/2 + 5, cy + 20);
+            }
+            else if (type === 'npn_bjt') {
+                ctx.beginPath(); ctx.arc(cx, cy, 22, 0, 2 * Math.PI); ctx.stroke();
+                ctx.beginPath(); ctx.moveTo(cx - 12, cy - 15); ctx.lineTo(cx - 12, cy + 15); ctx.stroke();
+                ctx.beginPath(); ctx.moveTo(cx - w, cy); ctx.lineTo(cx - 12, cy);
+                ctx.moveTo(cx - 12, cy - 5); ctx.lineTo(cx + 12, cy - 18); ctx.lineTo(cx + w, cy - 18);
+                ctx.moveTo(cx - 12, cy + 5); ctx.lineTo(cx + 12, cy + 18); ctx.lineTo(cx + w, cy + 18); ctx.stroke();
+                ctx.save(); ctx.fillStyle = ctx.strokeStyle; ctx.translate(cx + 4, cy + 14); ctx.rotate(Math.PI / 7);
+                ctx.beginPath(); ctx.moveTo(0,0); ctx.lineTo(-8,-3); ctx.lineTo(-6,4); ctx.closePath(); ctx.fill(); ctx.restore();
+            }
+            else if (type === 'n_channel_mosfet') {
+                ctx.beginPath(); ctx.arc(cx, cy, 22, 0, 2 * Math.PI); ctx.stroke();
+                ctx.beginPath(); ctx.moveTo(cx - 8, cy - 15); ctx.lineTo(cx - 8, cy + 15);
+                ctx.moveTo(cx - w, cy); ctx.lineTo(cx - 14, cy); ctx.moveTo(cx - 14, cy - 15); ctx.lineTo(cx - 14, cy + 15);
+                ctx.moveTo(cx - 8, cy - 10); ctx.lineTo(cx + 10, cy - 10); ctx.lineTo(cx + w, cy - 10);
+                ctx.moveTo(cx - 8, cy + 10); ctx.lineTo(cx + 10, cy + 10); ctx.lineTo(cx + w, cy + 10);
+                ctx.moveTo(cx - 8, cy); ctx.lineTo(cx + 10, cy); ctx.lineTo(cx + 10, cy + 10); ctx.stroke();
+                ctx.save(); ctx.fillStyle = ctx.strokeStyle; ctx.translate(cx + 2, cy);
+                ctx.beginPath(); ctx.moveTo(0,0); ctx.lineTo(-7,-4); ctx.lineTo(-7,4); ctx.closePath(); ctx.fill(); ctx.restore();
+            }
+            else if (type === 'transformer') {
+                ctx.beginPath();
+                for (let i = 0; i < 3; i++) { ctx.arc(cx - 14, cy - 12 + (i * 12), 7, -Math.PI/2, Math.PI/2, true); }
+                for (let i = 0; i < 3; i++) { ctx.arc(cx + 14, cy - 12 + (i * 12), 7, Math.PI/2, -Math.PI/2, true); }
+                ctx.moveTo(cx - 3, cy - 20); ctx.lineTo(cx - 3, cy + 20); ctx.moveTo(cx + 3, cy - 20); ctx.lineTo(cx + 3, cy + 20); ctx.stroke();
+            }
+            else if (type === 'dc_source') {
+                ctx.beginPath(); ctx.moveTo(cx - w, cy); ctx.lineTo(cx - 6, cy); ctx.moveTo(cx + w, cy); ctx.lineTo(cx + 6, cy);
+                ctx.moveTo(cx - 6, cy - 18); ctx.lineTo(cx - 6, cy + 18); ctx.moveTo(cx, cy - 10); ctx.lineTo(cx, cy + 10);
+                ctx.moveTo(cx + 6, cy - 18); ctx.lineTo(cx + 6, cy + 18); ctx.stroke();
+                ctx.font = "10px monospace"; ctx.fillText("+", cx - w + 5, cy - 5);
+            }
+            else if (type === 'ac_source') {
+                ctx.beginPath(); ctx.arc(cx, cy, 16, 0, 2 * Math.PI); ctx.stroke();
+                ctx.beginPath(); ctx.moveTo(cx - w, cy); ctx.lineTo(cx - 16, cy); ctx.moveTo(cx + 16, cy); ctx.lineTo(cx + w, cy); ctx.stroke();
+                ctx.beginPath(); for (let x = -10; x <= 10; x++) { ctx.lineTo(cx + x, cy + 6 * Math.sin((x / 10) * Math.PI)); } ctx.stroke();
+            }
+            else if (type === 'ground') {
+                ctx.beginPath(); ctx.moveTo(cx, cy); ctx.lineTo(cx, cy + 15);
+                ctx.moveTo(cx - 15, cy + 15); ctx.lineTo(cx + 15, cy + 15);
+                ctx.moveTo(cx - 10, cy + 20); ctx.lineTo(cx + 10, cy + 20);
+                ctx.moveTo(cx - 5, cy + 25); ctx.lineTo(cx + 5, cy + 25); ctx.stroke();
+            }
+            else if (type === 'mcu_8pin') {
+                ctx.strokeRect(cx - 20, cy - 30, 40, 60);
+                ctx.beginPath(); ctx.arc(cx, cy - 30, 6, 0, Math.PI, false); ctx.stroke();
+                ctx.font = "9px monospace"; ctx.fillStyle = ctx.strokeStyle;
+                for (let i = 0; i < 4; i++) {
+                    ctx.moveTo(cx - 30, cy - 20 + (i * 13)); ctx.lineTo(cx - 20, cy - 20 + (i * 13));
+                    ctx.moveTo(cx + 20, cy - 20 + (i * 13)); ctx.lineTo(cx + 30, cy - 20 + (i * 13));
+                    ctx.fillText(i+1, cx - 16, cy - 17 + (i * 13)); ctx.fillText(8-i, cx + 8, cy - 17 + (i * 13));
+                }
+                ctx.stroke();
+            }
+            else if (type === 'mcu_40pin') {
+                ctx.strokeRect(cx - 30, cy - 60, 60, 120);
+                ctx.beginPath(); ctx.arc(cx, cy - 60, 8, 0, Math.PI, false); ctx.stroke();
+                ctx.font = "8px monospace"; ctx.fillStyle = ctx.strokeStyle; ctx.fillText("MCU BLOCK", cx - 22, cy);
+                for(let i=0; i<10; i++) {
+                    ctx.moveTo(cx - 40, cy - 50 + (i * 11)); ctx.lineTo(cx - 30, cy - 50 + (i * 11));
+                    ctx.moveTo(cx + 30, cy - 50 + (i * 11)); ctx.lineTo(cx + 40, cy - 50 + (i * 11));
+                }
+                ctx.stroke();
+            }
+            else if (type === 'dc_motor') {
+                ctx.beginPath(); ctx.arc(cx, cy, 20, 0, 2 * Math.PI); ctx.stroke();
+                ctx.strokeRect(cx - 25, cy - 6, 5, 12); ctx.strokeRect(cx + 20, cy - 6, 5, 12);
+                ctx.beginPath(); ctx.moveTo(cx - w, cy); ctx.lineTo(cx - 25, cy); ctx.moveTo(cx + w, cy); ctx.lineTo(cx + 25, cy); ctx.stroke();
+                ctx.font = "bold 14px sans-serif"; ctx.fillStyle = ctx.strokeStyle; ctx.fillText("M", cx - 6, cy + 5);
+            }
+
+            if (annotationLabel && annotationLabel.trim() !== '') {
+                ctx.save(); ctx.fillStyle = colorPicker.value; ctx.font = "bold 10px monospace"; ctx.textAlign = "center";
+                ctx.fillText(annotationLabel.trim(), cx, cy + h + 8); ctx.restore();
+            }
+        }
+
+        function drawLayerElement(layer) {
+            if (layer.type === 'baked_raster') {
+                const rImg = new Image(); rImg.src = layer.snapData;
+                if (rImg.complete) ctx.drawImage(rImg, 0, 0);
+                else rImg.onload = () => ctx.drawImage(rImg, 0, 0);
+                return;
+            }
+
+            ctx.save(); ctx.translate(panX, panY); ctx.scale(zoomScale, zoomScale);
+            ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+            ctx.lineWidth = layer.thickness;
+            ctx.shadowBlur = 0; ctx.globalAlpha = 1.0; ctx.globalCompositeOperation = 'source-over';
+
+            if (layer.profile === 'cloth_pattern') { ctx.strokeStyle = clothPattern; ctx.fillStyle = clothPattern; }
+            else if (layer.profile === 'brick_pattern') { ctx.strokeStyle = brickPattern; ctx.fillStyle = brickPattern; }
+            else { ctx.strokeStyle = layer.color; ctx.fillStyle = layer.color; }
+
+            if (layer.profile === 'pencil') {
+                ctx.globalAlpha = 0.25; ctx.lineWidth = Math.max(1, layer.thickness * 0.4);
+            } else if (layer.profile === 'charcoal') {
+                ctx.globalAlpha = 0.65; ctx.lineWidth = layer.thickness * 1.2; ctx.shadowBlur = layer.thickness * 0.3; ctx.shadowColor = layer.color;
+            } else if (layer.profile === 'highlighter') {
+                ctx.globalAlpha = 0.45; ctx.lineCap = 'square'; ctx.lineWidth = layer.thickness * 2.5;
+            } else if (layer.profile === 'neon') {
+                ctx.shadowBlur = layer.thickness * 1.8; ctx.shadowColor = layer.color;
+            } else if (layer.profile === 'calligraphy') {
+                ctx.lineCap = 'square';
+            } else if (layer.profile === 'watercolor') {
+                ctx.globalAlpha = 0.15; ctx.shadowBlur = layer.thickness * 0.8; ctx.shadowColor = layer.color; ctx.lineWidth = layer.thickness * 1.8;
+            } else if (layer.profile === 'airbrush') {
+                ctx.globalAlpha = 0.10; ctx.shadowBlur = layer.thickness * 1.2; ctx.shadowColor = layer.color;
+            }
+
+            if (layer.type === 'image') {
+                if (layer.imgElement) { ctx.drawImage(layer.imgElement, layer.x, layer.y, layer.w, layer.h); }
+                else {
+                    const recoveryImg = new Image(); recoveryImg.src = layer.rawSource;
+                    layer.imgElement = recoveryImg; recoveryImg.onload = () => redrawAllLayers();
+                }
+            }
+            else if (layer.type === 'draw' || layer.type === 'erase') {
+                if (layer.type === 'erase') ctx.strokeStyle = '#ffffff';
+                if (layer.profile === 'spray' && layer.type !== 'erase') {
+                    layer.points.forEach(pt => ctx.fillRect(pt.x, pt.y, 1, 1));
+                } else if (layer.points.length > 1) {
+                    ctx.beginPath(); ctx.moveTo(layer.points[0].x, layer.points[0].y);
+                    for (let i = 1; i < layer.points.length; i++) ctx.lineTo(layer.points[i].x, layer.points[i].y);
+                    ctx.stroke();
+                }
+            } else if (layer.type === 'line') {
+                ctx.beginPath(); ctx.moveTo(layer.x1, layer.y1); ctx.lineTo(layer.x2, layer.y2); ctx.stroke();
+            } else if (layer.type === 'arrow') {
+                ctx.beginPath(); ctx.moveTo(layer.x1, layer.y1); ctx.lineTo(layer.x2, layer.y2); ctx.stroke();
+                drawArrowTipVector(layer.x2, layer.y2, layer.x1, layer.y1, layer.thickness);
+            } else if (layer.type === 'rect') {
+                ctx.strokeRect(layer.x, layer.y, layer.w, layer.h);
+            } else if (layer.type === 'circle') {
+                ctx.beginPath(); ctx.arc(layer.cx, layer.cy, layer.r, 0, 2 * Math.PI); ctx.stroke();
+            } else if (layer.type === 'triangle') {
+                ctx.beginPath(); ctx.moveTo(layer.x1, layer.y1); ctx.lineTo(layer.x2, layer.y2); ctx.lineTo(layer.x3, layer.y3); ctx.closePath(); ctx.stroke();
+            } else if (layer.type === 'star') {
+                drawStarShapeVector(layer.cx, layer.cy, 5, layer.r, layer.r / 2.5);
+            } else if (layer.type === 'stamp') {
+                drawElectronicStamp(layer.stampType, layer.cx, layer.cy, layer.thickness, layer.annotation);
+            } else if (layer.type === 'text') {
+                ctx.font = `${layer.thickness * 2.5}px ${layer.font}`; ctx.fillText(layer.text, layer.x, layer.y);
+            } else if (layer.type === 'fill') {
+                ctx.fillRect(-panX, -panY, canvas.width / zoomScale, canvas.height / zoomScale);
+            }
+
+            if (currentTool === 'select' && selectedLayerRef && selectedLayerRef.id === layer.id) {
+                ctx.strokeStyle = '#3b82f6'; ctx.lineWidth = 1.5; ctx.setLineDash([4, 4]);
+                let bx = 0, by = 0, bw = 0, bh = 0;
+                
+                if (layer.type === 'image' || layer.type === 'rect') { bx = layer.x; by = layer.y; bw = layer.w; bh = layer.h; }
+                else if (layer.type === 'circle' || layer.type === 'star') { bx = layer.cx - layer.r; by = layer.cy - layer.r; bw = layer.r * 2; bh = layer.r * 2; }
+                else if (layer.type === 'stamp') { bx = layer.cx - 25; by = layer.cy - 20; bw = 50; bh = 40; }
+                else if (layer.type === 'line') { bx = Math.min(layer.x1, layer.x2); by = Math.min(layer.y1, layer.y2); bw = Math.abs(layer.x2 - layer.x1); bh = Math.abs(layer.y2 - layer.y1); }
+                else if (layer.type === 'text') { bx = layer.x; by = layer.y - 20; bw = 100; bh = 25; }
+
+                ctx.strokeRect(bx - 4, by - 4, bw + 8, bh + 8);
+                ctx.setLineDash([]); ctx.fillStyle = '#3b82f6';
+                ctx.fillRect(bx + bw + 2, by + bh + 2, 6, 6); 
+            }
+            ctx.restore();
+        }
+
+        function drawArrowTipVector(tox, toy, fromx, fromy, thickness) {
+            const headlen = thickness * 2 + 8; const angle = Math.atan2(toy - fromy, tox - fromx);
+            ctx.setLineDash([]); ctx.beginPath(); ctx.moveTo(tox, toy);
+            ctx.lineTo(tox - headlen * Math.cos(angle - Math.PI / 6), toy - headlen * Math.sin(angle - Math.PI / 6));
+            ctx.moveTo(tox, toy); ctx.lineTo(tox - headlen * Math.cos(angle + Math.PI / 6), toy - headlen * Math.sin(angle + Math.PI / 6));
+            ctx.stroke();
+        }
+
+        function drawStarShapeVector(cx, cy, spikes, outerRadius, innerRadius) {
+            let rot = Math.PI / 2 * 3; let x = cx; let y = cy; let step = Math.PI / spikes;
+            ctx.beginPath(); ctx.moveTo(cx, cy - outerRadius);
+            for (let i = 0; i < spikes; i++) {
+                x = cx + Math.cos(rot) * outerRadius; y = cy + Math.sin(rot) * outerRadius; ctx.lineTo(x, y); rot += step;
+                x = cx + Math.cos(rot) * innerRadius; y = cy + Math.sin(rot) * innerRadius; ctx.lineTo(x, y); rot += step;
+            }
+            ctx.closePath(); ctx.stroke();
+        }
+
+        function redrawAllLayers() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.fillStyle = '#ffffff'; ctx.fillRect(0, 0, canvas.width, canvas.height);
+            drawBackgroundGrid();
+            canvasLayers.forEach(layer => drawLayerElement(layer));
+            updateLayersPanelUI();
+        }
+
+        function deleteLayer(id) {
+            if (selectedLayerRef && selectedLayerRef.id === id) selectedLayerRef = null;
+            canvasLayers = canvasLayers.filter(l => l.id !== id);
+            redrawAllLayers();
+        }
+
+        function undo() {
+            if (canvasLayers.length > 0) { canvasLayers.pop(); selectedLayerRef = null; redrawAllLayers(); }
+        }
+
+        function updateLayersPanelUI() {
+            layerCount.innerText = canvasLayers.length; layersList.innerHTML = '';
+            if (canvasLayers.length === 0) {
+                layersList.innerHTML = '<div class="text-zinc-400 text-center py-4 select-none">No active layers</div>'; return;
+            }
+            [...canvasLayers].reverse().forEach(layer => {
+                const row = document.createElement('div');
+                row.className = `flex justify-between items-center bg-zinc-50 border border-zinc-200 p-2 rounded-lg transition-all ${selectedLayerRef && selectedLayerRef.id === layer.id ? 'border-blue-500 bg-blue-50/40' : 'hover:bg-zinc-100/80'}`;
+                row.innerHTML = `
+                    <span class="font-medium select-none truncate pr-2 cursor-pointer" onclick="selectLayerFromUI(${layer.id})">🔹 ${layer.name}</span>
+                    <button onclick="deleteLayer(${layer.id})" class="text-red-500 hover:text-red-700 cursor-pointer font-bold px-1">✕</button>
+                `;
+                layersList.appendChild(row);
+            });
+        }
+
+        function selectLayerFromUI(id) {
+            setTool('select'); selectedLayerRef = canvasLayers.find(l => l.id === id); redrawAllLayers();
+        }
+
+        function applyContextStyles() {
+            ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+            ctx.lineWidth = thicknessSlider.value;
+            ctx.shadowBlur = 0; ctx.globalAlpha = 1.0;
+            ctx.globalCompositeOperation = 'source-over';
+
+            if (brushProfile.value === 'cloth_pattern') ctx.strokeStyle = clothPattern;
+            else if (brushProfile.value === 'brick_pattern') ctx.strokeStyle = brickPattern;
+            else ctx.strokeStyle = currentTool === 'erase' ? '#ffffff' : colorPicker.value;
+
+            if (currentTool !== 'erase') {
+                const selectedProfile = brushProfile.value;
+                if (selectedProfile === 'pencil') { ctx.globalAlpha = 0.25; ctx.lineWidth = Math.max(1, thicknessSlider.value * 0.4); } 
+                else if (selectedProfile === 'charcoal') { ctx.globalAlpha = 0.65; ctx.lineWidth = thicknessSlider.value * 1.2; ctx.shadowBlur = thicknessSlider.value * 0.3; ctx.shadowColor = colorPicker.value; }
+                else if (selectedProfile === 'highlighter') { ctx.globalAlpha = 0.45; ctx.lineCap = 'square'; ctx.lineWidth = thicknessSlider.value * 2.5; } 
+                else if (selectedProfile === 'neon') { ctx.shadowBlur = thicknessSlider.value * 1.8; ctx.shadowColor = colorPicker.value; } 
+                else if (selectedProfile === 'calligraphy') { ctx.lineCap = 'square'; }
+                else if (selectedProfile === 'watercolor') { ctx.globalAlpha = 0.15; ctx.shadowBlur = thicknessSlider.value * 0.8; ctx.shadowColor = colorPicker.value; ctx.lineWidth = thicknessSlider.value * 1.8; }
+                else if (selectedProfile === 'airbrush') { ctx.globalAlpha = 0.10; ctx.shadowBlur = thicknessSlider.value * 1.2; ctx.shadowColor = colorPicker.value; }
+            }
+            ctx.setLineDash(lineType.value === 'dashed' ? [15, 10] : lineType.value === 'dotted' ? [2, 8] : []);
+        }
+
+        function drawMeasurementGuideHUD(x1, y1, x2, y2) {
+            const dx = x2 - x1; const dy = y2 - y1;
+            const distance = Math.round(Math.sqrt(dx * dx + dy * dy));
+            let angleDeg = Math.round(Math.atan2(-dy, dx) * (180 / Math.PI));
+            if (angleDeg < 0) angleDeg += 360; 
+
+            ctx.save(); ctx.translate(panX, panY); ctx.scale(zoomScale, zoomScale);
+            ctx.strokeStyle = '#3b82f6'; ctx.lineWidth = 1; ctx.setLineDash([4, 4]);
+            ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x2, y2); ctx.stroke();
+
+            ctx.fillStyle = 'rgba(15, 23, 42, 0.85)'; ctx.font = 'bold 11px monospace';
+            const labelText = ` L: ${distance}px | A: ${angleDeg}° `;
+            const textWidth = ctx.measureText(labelText).width;
+            
+            ctx.fillRect(x2 + 10, y2 - 25, textWidth + 6, 18);
+            ctx.fillStyle = '#ffffff'; ctx.fillText(labelText, x2 + 13, y2 - 12);
+            ctx.restore();
+        }
+
+        let lastMoveTime = 0, lastMoveX = 0, lastMoveY = 0;
+
+        function startDrawing(e) {
+            if (e.target.closest('#layers-panel') || e.target.closest('#top-panel') || e.target.closest('#left-panel') || e.target.closest('#right-panel') || e.target.closest('#zoom-panel') || e.target.closest('header')) return;
+
+            const rect = canvas.getBoundingClientRect();
+            let clickX = e.clientX - rect.left; let clickY = e.clientY - rect.top;
+
+            if (snapToGrid.checked && currentTool !== 'select') {
+                const snapped = getSnappedCoordinates(e.clientX, e.clientY);
+                clickX = snapped.x - rect.left; clickY = snapped.y - rect.top;
+            }
+
+            currentRawStartX = clickX; currentRawStartY = clickY;
+            startX = (currentRawStartX - panX) / zoomScale; startY = (currentRawStartY - panY) / zoomScale;
+            lastMoveTime = Date.now(); lastMoveX = currentRawStartX; lastMoveY = currentRawStartY;
+
+            if (currentTool === 'hand') { isPanning = true; return; }
+            if (currentTool === 'picker') { sampleColorFromCanvas(currentRawStartX, currentRawStartY); return; }
+            if (currentTool === 'fill') {
+                canvasLayers.push({ id: Date.now(), name: `Paint Flood Fill`, type: 'fill', color: colorPicker.value });
+                redrawAllLayers(); return;
+            }
+
+            if (currentTool === 'select') {
+                isTransforming = false;
+                if (selectedLayerRef) {
+                    let layer = selectedLayerRef;
+                    let bx = 0, by = 0, bw = 0, bh = 0;
+                    if (layer.type === 'image' || layer.type === 'rect') { bx = layer.x; by = layer.y; bw = layer.w; bh = layer.h; }
+                    else if (layer.type === 'circle' || layer.type === 'star') { bx = layer.cx - layer.r; by = layer.cy - layer.r; bw = layer.r * 2; bh = layer.r * 2; }
+                    else if (layer.type === 'stamp') { bx = layer.cx - 25; by = layer.cy - 20; bw = 50; bh = 40; }
+                    else if (layer.type === 'line') { bx = Math.min(layer.x1, layer.x2); by = Math.min(layer.y1, layer.y2); bw = Math.abs(layer.x2 - layer.x1); bh = Math.abs(layer.y2 - layer.y1); }
+                    else if (layer.type === 'text') { bx = layer.x; by = layer.y - 20; bw = 100; bh = 25; }
+
+                    if (startX >= bx + bw && startX <= bx + bw + 12 && startY >= by + bh && startY <= by + bh + 12) {
+                        isTransforming = true; transformMode = 'scale'; return;
+                    }
+                    if (startX >= bx && startX <= bx + bw && startY >= by && startY <= by + bh) {
+                        isTransforming = true; transformMode = 'move'; return;
+                    }
+                }
+
+                let foundSelection = false;
+                for (let i = canvasLayers.length - 1; i >= 0; i--) {
+                    let layer = canvasLayers[i];
+                    let bx = 0, by = 0, bw = 0, bh = 0;
+                    if (layer.type === 'image' || layer.type === 'rect') { bx = layer.x; by = layer.y; bw = layer.w; bh = layer.h; }
+                    else if (layer.type === 'circle' || layer.type === 'star') { bx = layer.cx - layer.r; by = layer.cy - layer.r; bw = layer.r * 2; bh = layer.r * 2; }
+                    else if (layer.type === 'stamp') { bx = layer.cx - 25; by = layer.cy - 20; bw = 50; bh = 40; }
+                    else if (layer.type === 'line') { bx = Math.min(layer.x1, layer.x2); by = Math.min(layer.y1, layer.y2); bw = Math.abs(layer.x2 - layer.x1); bh = Math.abs(layer.y2 - layer.y1); }
+                    else if (layer.type === 'text') { bx = layer.x; by = layer.y - 20; bw = 100; bh = 25; }
+
+                    if (startX >= bx && startX <= bx + bw && startY >= by && startY <= by + bh) {
+                        selectedLayerRef = layer; isTransforming = true; transformMode = 'move'; foundSelection = true; break;
+                    }
+                }
+                if (!foundSelection) selectedLayerRef = null;
+                redrawAllLayers(); return;
+            }
+
+            if (currentTool === 'stamp') {
+                canvasLayers.push({
+                    id: Date.now(), name: `${stampType.options[stampType.selectedIndex].text}`,
+                    type: 'stamp', stampType: stampType.value, annotation: stampLabel.value, cx: startX, cy: startY,
+                    thickness: parseFloat(thicknessSlider.value), color: colorPicker.value
+                });
+                redrawAllLayers(); return;
+            }
+
+            if (currentTool === 'text') {
+                const inputNode = document.createElement('input');
+                inputNode.type = 'text'; inputNode.placeholder = 'Type text label note...';
+                inputNode.className = 'absolute bg-white border border-blue-500 px-1 py-0.5 rounded text-xs outline-none z-30 shadow-md text-zinc-900';
+                inputNode.style.left = `${e.clientX}px`; inputNode.style.top = `${e.clientY}px`;
+                document.body.appendChild(inputNode); inputNode.focus();
+
+                inputNode.onblur = function() {
+                    const txt = inputNode.value;
+                    if (txt && txt.trim().length > 0) {
+                        canvasLayers.push({
+                            id: Date.now(), name: `Text Label string`, type: 'text',
+                            x: startX, y: startY, text: txt.trim(),
+                            thickness: parseFloat(thicknessSlider.value), font: fontFamily.value, color: colorPicker.value
+                        });
+                        redrawAllLayers();
+                    }
+                    inputNode.remove();
+                };
+                inputNode.onkeydown = function(ev) { if (ev.key === 'Enter') inputNode.blur(); };
+                return;
+            }
+
+            isDrawing = true; currentPathPoints = [{ x: startX, y: startY }];
+        }
+
+        function draw(e) {
+            const rect = canvas.getBoundingClientRect();
+            let currentRawX = e.clientX - rect.left; let currentRawY = e.clientY - rect.top;
+
+            if (isPanning && currentTool === 'hand') {
+                panX += e.movementX; panY += e.movementY; redrawAllLayers(); return;
+            }
+
+            if (currentTool === 'select' && isTransforming && selectedLayerRef) {
+                const currentX = (currentRawX - panX) / zoomScale; const currentY = (currentRawY - panY) / zoomScale;
+                const dx = currentX - startX; const dy = currentY - startY;
+                let layer = selectedLayerRef;
+
+                if (transformMode === 'move') {
+                    if (layer.type === 'image' || layer.type === 'rect') { layer.x += dx; layer.y += dy; }
+                    else if (layer.type === 'circle' || layer.type === 'star' || layer.type === 'stamp') { layer.cx += dx; layer.cy += dy; }
+                    else if (layer.type === 'line') { layer.x1 += dx; layer.y1 += dy; layer.x2 += dx; layer.y2 += dy; }
+                    else if (layer.type === 'text') { layer.x += dx; layer.y += dy; }
+                } 
+                else if (transformMode === 'scale') {
+                    if (layer.type === 'image' || layer.type === 'rect') { layer.w = Math.max(10, layer.w + dx); layer.h = Math.max(10, layer.h + dy); }
+                    else if (layer.type === 'circle' || layer.type === 'star') { layer.r = Math.max(5, layer.r + dx); }
+                    else if (layer.type === 'line') { layer.x2 += dx; layer.y2 += dy; }
+                }
+                startX = currentX; startY = currentY; redrawAllLayers(); return;
+            }
+
+            if (!isDrawing) return;
+
+            if (snapToGrid.checked) {
+                const snapped = getSnappedCoordinates(e.clientX, e.clientY);
+                currentRawX = snapped.x - rect.left; currentRawY = snapped.y - rect.top;
+            }
+
+            const currentX = (currentRawX - panX) / zoomScale; const currentY = (currentRawY - panY) / zoomScale;
+
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            drawBackgroundGrid();
+            canvasLayers.forEach(layer => drawLayerElement(layer));
+
+            applyContextStyles();
+            ctx.save(); ctx.translate(panX, panY); ctx.scale(zoomScale, zoomScale);
+
+            if (currentTool === 'draw' || currentTool === 'erase') {
+                if (brushProfile.value === 'spray' && currentTool !== 'erase') {
+                    const density = 40; const radius = thicknessSlider.value * 2; ctx.fillStyle = colorPicker.value;
+                    for (let i = 0; i < density; i++) {
+                        const angle = Math.random() * Math.PI * 2; const r = Math.random() * radius;
+                        currentPathPoints.push({ x: currentX + Math.cos(angle) * r, y: currentY + Math.sin(angle) * r });
+                    }
+                    currentPathPoints.forEach(pt => ctx.fillRect(pt.x, pt.y, 1, 1));
+                } 
+                else if (brushProfile.value === 'velocity' && currentTool !== 'erase') {
+                    const moveTime = Date.now(); const dt = moveTime - lastMoveTime || 1;
+                    const speed = Math.sqrt(Math.pow(currentRawX - lastMoveX, 2) + Math.pow(currentRawY - lastMoveY, 2)) / dt;
+                    const dynamicThickness = Math.max(1, thicknessSlider.value * (1 / (speed + 0.4)));
+                    ctx.lineWidth = dynamicThickness;
+
+                    currentPathPoints.push({ x: currentX, y: currentY, calculatedWidth: dynamicThickness });
+                    if (currentPathPoints.length > 1) {
+                        for (let i = 1; i < currentPathPoints.length; i++) {
+                            ctx.lineWidth = currentPathPoints[i].calculatedWidth || thicknessSlider.value;
+                            ctx.beginPath(); ctx.moveTo(currentPathPoints[i-1].x, currentPathPoints[i-1].y);
+                            ctx.lineTo(currentPathPoints[i].x, currentPathPoints[i].y); ctx.stroke();
+                        }
+                    }
+                    lastMoveTime = moveTime; lastMoveX = currentRawX; lastMoveY = currentRawY;
+                }
+                else {
+                    currentPathPoints.push({ x: currentX, y: currentY });
+                    if (currentPathPoints.length > 1) {
+                        if (currentTool === 'erase') ctx.strokeStyle = '#ffffff';
+                        ctx.beginPath(); ctx.moveTo(currentPathPoints[0].x, currentPathPoints[0].y);
+                        for (let i = 1; i < currentPathPoints.length; i++) ctx.lineTo(currentPathPoints[i].x, currentPathPoints[i].y);
+                        ctx.stroke();
+                    }
+                }
+            } else {
+                ctx.strokeStyle = colorPicker.value; ctx.fillStyle = colorPicker.value;
+                if (currentTool === 'rect') { ctx.strokeRect(startX, startY, currentX - startX, currentY - startY); } 
+                else if (currentTool === 'line') { ctx.beginPath(); ctx.moveTo(startX, startY); ctx.lineTo(currentX, currentY); ctx.stroke(); } 
+                else if (currentTool === 'arrow') { ctx.beginPath(); ctx.moveTo(startX, startY); ctx.lineTo(currentX, currentY); ctx.stroke(); drawArrowTipVector(currentX, currentY, startX, startY, thicknessSlider.value); } 
+                else if (currentTool === 'circle') { ctx.beginPath(); let r = Math.sqrt(Math.pow(currentX - startX, 2) + Math.pow(currentY - startY, 2)); ctx.arc(startX, startY, r, 0, 2 * Math.PI); ctx.stroke(); } 
+                else if (currentTool === 'triangle') { ctx.beginPath(); ctx.moveTo(startX + (currentX - startX) / 2, startY); ctx.lineTo(currentX, currentY); ctx.lineTo(startX, currentY); ctx.closePath(); ctx.stroke(); } 
+                else if (currentTool === 'star') { let r = Math.sqrt(Math.pow(currentX - startX, 2) + Math.pow(currentY - startY, 2)); drawStarShapeVector(startX, startY, 5, r, r / 2.5); }
+            }
+            ctx.restore();
+
+            if (currentTool === 'line' || currentTool === 'arrow' || currentTool === 'rect' || currentTool === 'circle') {
+                drawMeasurementGuideHUD(startX, startY, currentX, currentY);
+            }
+        }
+
+        function stopDrawing(e) {
+            if (currentTool === 'select') { isTransforming = false; return; }
+            if (!isDrawing) { isPanning = false; return; }
+            isDrawing = false;
+            const rect = canvas.getBoundingClientRect();
+            let finalRawX = e.clientX !== undefined && e.clientX !== 0 ? e.clientX - rect.left : currentRawStartX;
+            let finalRawY = e.clientY !== undefined && e.clientY !== 0 ? e.clientY - rect.top : currentRawStartY;
+
+            if (snapToGrid.checked) {
+                const snapped = getSnappedCoordinates(e.clientX, e.clientY);
+                finalRawX = snapped.x - rect.left; finalRawY = snapped.y - rect.top;
+            }
+
+            if (currentPathPoints.length && (currentTool === 'draw' || currentTool === 'erase')) {
+                finalRawX = currentPathPoints[currentPathPoints.length - 1].x * zoomScale + panX;
+                finalRawY = currentPathPoints[currentPathPoints.length - 1].y * zoomScale + panY;
+            }
+
+            let endX = (finalRawX - panX) / zoomScale; let endY = (finalRawY - panY) / zoomScale;
+            if (currentTool === 'line' || currentTool === 'arrow' || currentTool === 'rect') {
+                if (Math.abs(endX - startX) < 1 && Math.abs(endY - startY) < 1) { endX += BASE_GRID_VAL; endY += BASE_GRID_VAL; }
+            }
+
+            let newLayer = { id: Date.now(), thickness: parseFloat(thicknessSlider.value), profile: brushProfile.value, lineType: lineType.value, color: colorPicker.value };
+
+            if (currentTool === 'draw' || currentTool === 'erase') {
+                newLayer.name = currentTool === 'erase' ? 'Eraser Line' : `${brushProfile.options[brushProfile.selectedIndex].text}`;
+                newLayer.type = currentTool; newLayer.points = currentPathPoints;
+            } else if (currentTool === 'line' || currentTool === 'arrow') {
+                newLayer.name = currentTool === 'line' ? 'Straight Line' : 'Vector Arrow';
+                newLayer.type = currentTool; newLayer.x1 = startX; newLayer.y1 = startY; newLayer.x2 = endX; newLayer.y2 = endY;
+            } else if (currentTool === 'rect') {
+                newLayer.name = 'Rectangle Shape'; newLayer.type = 'rect'; newLayer.x = startX; newLayer.y = startY; newLayer.w = endX - startX; newLayer.h = endY - startY;
+            } else if (currentTool === 'circle') {
+                newLayer.name = 'Circle Shape'; newLayer.type = 'circle'; newLayer.cx = startX; newLayer.cy = startY;
+                newLayer.r = Math.sqrt(Math.pow(endX - startX, 2) + Math.pow(endY - startY, 2));
+            } else if (currentTool === 'triangle') {
+                newLayer.name = 'Triangle Shape'; newLayer.type = 'triangle';
+                newLayer.x1 = startX + (endX - startX) / 2; newLayer.y1 = startY; newLayer.x2 = endX; newLayer.y2 = endY; newLayer.x3 = startX; newLayer.y3 = endY;
+            } else if (currentTool === 'star') {
+                newLayer.name = 'Star Shape'; newLayer.type = 'star'; newLayer.cx = startX; newLayer.cy = startY;
+                newLayer.r = Math.sqrt(Math.pow(endX - startX, 2) + Math.pow(endY - startY, 2));
+            }
+
+            canvasLayers.push(newLayer); redrawAllLayers(); isPanning = false;
+        }
+
+        function clearCanvas() {
+            canvasLayers = []; ctx.clearRect(0, 0, canvas.width, canvas.height); ctx.setTransform(1, 0, 0, 1, 0, 0);
+            drawBackgroundGrid(); updateLayersPanelUI();
+        }
+
+        function downloadCanvas() {
+            const link = document.createElement('a'); link.download = `Schematic_CAD_${Date.now()}.png`; link.href = canvas.toDataURL(); link.click();
+        }
+
+        thicknessSlider.oninput = () => updateBrushPreview();
+        colorPicker.oninput = () => updateBrushPreview();
+
+        canvas.addEventListener('mousedown', startDrawing);
+        canvas.addEventListener('mousemove', draw);
+        window.addEventListener('mouseup', stopDrawing);
+        window.addEventListener('resize', resizeCanvas);
+
+        function saveCanvas() {
+            const currentActive = projectPages.find(p => p.id === activePageId);
+            if (currentActive) currentActive.layers = canvasLayers;
+
+            const safePayload = projectPages.map(p => ({
+                id: p.id, name: p.name,
+                layers: p.layers.map(l => ({
+                    id: l.id, name: l.name, type: l.type, thickness: l.thickness, profile: l.profile, lineType: l.lineType, color: l.color,
+                    points: l.points, x: l.x, y: l.y, w: l.w, h: l.h, cx: l.cx, cy: l.cy, r: l.r, x1: l.x1, y1: l.y1, x2: l.x2, y2: l.y2,
+                    x3: l.x3, y3: l.y3, text: l.text, font: l.font, stampType: l.stampType, annotation: l.annotation, rawSource: l.rawSource, snapData: l.snapData
+                }))
+            }));
+
+            fetch('/api/save', {
+                method: 'POST', headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ pages: safePayload, activeSheet: activePageId })
+            })
+            .then(res => res.json()).then(data => alert(data.message)).catch(err => console.error(err));
+        }
+
+        function loadCanvasFromServer() {
+            fetch('/api/load').then(res => res.json()).then(data => {
+                if (data.pages && data.pages.length > 0) {
+                    projectPages = data.pages; activePageId = data.activeSheet || projectPages[0].id;
+                    const activeSheetObj = projectPages.find(p => p.id === activePageId);
+                    canvasLayers = activeSheetObj ? activeSheetObj.layers : projectPages[0].layers;
+                } else {
+                    canvasLayers = [];
+                }
+                updateTabsUI(); redrawAllLayers();
+            });
+        }
+
+        window.onload = () => { precompileCanvasTextures(); resizeCanvas(); updateBrushPreview(); };
+    </script>
+</body>
+</html>
