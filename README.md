@@ -14,7 +14,7 @@
 │  ⛶  L-SELECT REGULAR MATRIX TRANSLATION MODEL                         │
 ├────────────────────────────────────────────────────────────────────────┤
 │ Click, grab, drag, and scale vector profiles, text fields, or imported │
-│ image sticker files dynamically via single-node cursor scaling tracks.│
+│ image sticker files dynamically via single-node cursor scaling tracks. │
 └────────────────────────────────────────────────────────────────────────┘
 
 
@@ -28,10 +28,10 @@
 ## 📐 Industrial CAD Architecture
 
 ┌────────────────────────────────────────────────────────────────────────┐
-│  🧲  INTERSECTION SNAP-TO-GRID CONSTRAINER                              │
+│  🧲  INTERSECTION SNAP-TO-GRID CONSTRAINER                             │
 ├────────────────────────────────────────────────────────────────────────┤
 │ Locks active coordinates to the nearest BASE_GRID node path vector,    │
-│ maintaining zero-drift alignments across complex schematics.          │
+│ maintaining zero-drift alignments across complex schematics.           │
 └────────────────────────────────────────────────────────────────────────┘
 
 
